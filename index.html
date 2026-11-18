@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b7a3b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Code Route Bénin</title>
+<style>
+:root{--g:#0b7a3b;--y:#fcd116;--r:#e8112d;--bg:#f4f6f4;--c:#fff;--t:#1b1f1b}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--g);color:#fff;padding:14px 16px;text-align:center;font-weight:700;font-size:18px;border-bottom:4px solid var(--y)}
+main{flex:1;padding:16px;max-width:560px;width:100%;margin:0 auto}
+.card{background:var(--c);border-radius:14px;padding:16px;box-shadow:0 1px 4px #0002;margin-bottom:12px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:14px;width:100%;margin-bottom:10px;background:var(--g);color:#fff;font-weight:600;font-size:16px}
+button.sec{background:#fff;color:var(--g);border:2px solid var(--g)}
+button.opt{background:#fff;color:var(--t);border:2px solid #d5dbd5;text-align:left;font-weight:500}
+button.ok{background:#d9f5e3;border-color:var(--g)}
+button.ko{background:#fde0e3;border-color:var(--r)}
+.bar{height:8px;background:#dde3dd;border-radius:6px;margin-bottom:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--y);width:0;transition:width .3s}
+.q{font-size:18px;font-weight:600;margin-bottom:14px;line-height:1.35}
+.exp{background:#fff8d6;border-left:4px solid var(--y);padding:10px;border-radius:8px;margin:8px 0 12px;font-size:15px}
+.big{font-size:44px;font-weight:800;text-align:center;color:var(--g)}
+.muted{color:#667;font-size:14px;text-align:center;margin:6px 0}
+.pro{background:var(--y);color:#222;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px}
+input{width:100%;padding:12px;border:2px solid #d5dbd5;border-radius:10px;font-size:16px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>🚦 Code Route Bénin</header>
+<main id="app"></main>
+<script>
+/* ========= CONFIG (à modifier) ========= */
+const WHATSAPP = "2290199965119";            // numéro pour acheter le code Pro
+const PRO_PRICE = "1 000 FCFA";             // prix affiché
+const PRO_CODES = ["ROUTE2026","BENIN-PRO"]; // codes Pro valides (change-les, ajoute-en)
+const PASS = 0.8;                           // 80% pour réussir
+/* ======================================= */
+
+const Q = [
+// cat: 0 Panneaux, 1 Priorités, 2 Règles, 3 Sécurité
+[0,"Un panneau triangulaire à bordure rouge signale :",["Une interdiction","Un danger","Une obligation"],1,"Les panneaux triangulaires avertissent d'un danger."],
+[0,"Un panneau rond à bordure rouge indique :",["Une interdiction","Une indication","Un danger"],0,"Rond + bordure rouge = interdiction (ou limitation)."],
+[0,"Un panneau rond à fond bleu indique :",["Une interdiction","Une obligation","Un danger"],1,"Rond bleu = obligation à respecter."],
+[0,"Le panneau STOP (octogonal) impose :",["De ralentir seulement","De s'arrêter complètement","De klaxonner"],1,"Arrêt complet obligatoire, même si la route semble libre."],
+[0,"Un triangle pointe vers le bas signifie :",["Danger","Stop","Cédez le passage"],2,"Il faut laisser passer les véhicules de la route prioritaire."],
+[0,"Un panneau rond rouge avec une barre blanche horizontale signifie :",["Sens interdit","Stationnement interdit","Fin de limitation"],0,"C'est le panneau de sens interdit."],
+[0,"Un disque bleu avec une barre rouge oblique signifie :",["Obligation de tourner","Stationnement interdit","Parking autorisé"],1,"Il interdit le stationnement."],
+[0,"Un panneau « 50 » dans un cercle rouge signifie :",["Vitesse minimale 50 km/h","Vitesse maximale 50 km/h","Distance de 50 m"],1,"Il limite la vitesse à 50 km/h maximum."],
+[0,"Une ligne continue au sol interdit :",["De stationner","De la franchir ou de la chevaucher","De rouler à droite"],1,"On ne doit ni la franchir ni la chevaucher."],
+[0,"Une ligne discontinue (tirets) permet :",["De la franchir si la voie est libre","De ne jamais changer de voie","D'accélérer sans limite"],0,"On peut la franchir en sécurité, pour dépasser par exemple."],
+[0,"Devant un passage piéton, le conducteur doit :",["Accélérer","Ralentir et céder aux piétons","Klaxonner pour les presser"],1,"Les piétons engagés sont prioritaires."],
+[0,"Un panneau rectangulaire ou carré bleu sert à :",["Informer / indiquer","Interdire","Avertir d'un danger"],0,"Les panneaux d'indication sont carrés ou rectangulaires."],
+[1,"À un carrefour sans signalisation, qui est prioritaire ?",["Le véhicule venant de gauche","Le véhicule venant de droite","Le plus gros véhicule"],1,"Règle de la priorité à droite."],
+[1,"Au feu rouge, le conducteur doit :",["Passer s'il n'y a personne","S'arrêter","Ralentir seulement"],1,"Le feu rouge impose l'arrêt."],
+[1,"Au feu orange fixe, on doit :",["Accélérer","S'arrêter, sauf si on ne peut plus freiner en sécurité","Klaxonner"],1,"L'orange annonce le rouge : on s'arrête si on le peut."],
+[1,"Une ambulance avec sirène arrive derrière vous :",["Vous l'ignorez","Vous vous rangez pour la laisser passer","Vous accélérez"],1,"Les véhicules prioritaires doivent pouvoir passer."],
+[1,"Un agent de la circulation vous fait signe d'arrêter alors que le feu est vert :",["Vous suivez le feu","Vous obéissez à l'agent","Vous passez vite"],1,"Les ordres de l'agent priment sur les feux et panneaux."],
+[1,"À un passage à niveau, feu rouge clignotant :",["Vous passez vite","Vous vous arrêtez","Vous klaxonnez et passez"],1,"Arrêt obligatoire : un train arrive."],
+[1,"Un piéton est engagé sur le passage clouté :",["Je passe devant lui","Je m'arrête et le laisse traverser","Je klaxonne"],1,"Le piéton engagé est prioritaire."],
+[2,"On circule au Bénin :",["À gauche","À droite","Au milieu"],1,"La circulation se fait sur la partie droite de la chaussée."],
+[2,"Le dépassement se fait normalement par :",["La droite","La gauche","Peu importe"],1,"On dépasse par la gauche."],
+[2,"Dépasser est interdit :",["Sur une route droite et dégagée","Dans un virage sans visibilité","Sur une grande route"],1,"Sans bonne visibilité, le dépassement est trop dangereux."],
+[2,"La distance de sécurité sert à :",["Éviter une collision en cas de freinage","Rouler plus vite","Gagner du carburant"],0,"Elle doit augmenter avec la vitesse et sous la pluie."],
+[2,"Téléphoner en tenant le téléphone en main pendant la conduite est :",["Autorisé","Interdit et dangereux","Permis en ville"],1,"Cela détourne l'attention et est sanctionné."],
+[2,"Le clignotant doit être mis :",["Après avoir tourné","Avant de changer de direction, assez tôt","Jamais en ville"],1,"On signale son intention à l'avance."],
+[2,"La nuit, il faut rouler avec :",["Aucun feu","Les feux de croisement allumés","Les feux de détresse"],1,"Pour voir et être vu."],
+[2,"Quand on est très fatigué au volant :",["On continue","On s'arrête et on se repose","On met la musique fort"],1,"La fatigue réduit les réflexes comme l'alcool."],
+[2,"L'alcool au volant :",["N'a aucun effet en petite quantité","Réduit la vigilance et les réflexes","Améliore la concentration"],1,"Même en petite quantité, il augmente le risque d'accident."],
+[2,"Sous la pluie, il faut :",["Garder la même vitesse","Réduire la vitesse et augmenter la distance","Freiner brusquement"],1,"La distance de freinage s'allonge sur route mouillée."],
+[2,"Le stationnement est interdit :",["Sur un passage piéton","Dans un parking","Devant chez soi toujours autorisé"],0,"Il gêne et met en danger les piétons."],
+[3,"Le casque est obligatoire pour :",["Le conducteur seulement","Le conducteur et le passager de la moto","Personne en ville"],1,"Casque attaché pour tous les occupants de la moto."],
+[3,"La ceinture de sécurité est obligatoire pour :",["Le conducteur seulement","Le conducteur et les passagers","Seulement hors agglomération"],1,"Elle réduit fortement les blessures graves."],
+[3,"Un jeune enfant en voiture doit être :",["Debout derrière","Attaché, de préférence à l'arrière","Sur les genoux du conducteur"],1,"Il doit être correctement retenu et protégé."],
+[3,"Transporter plus de passagers que prévu par le constructeur est :",["Autorisé en cas de besoin","Interdit","Permis la nuit"],1,"La surcharge est dangereuse et sanctionnée."],
+[3,"En cas de panne sur la route, il faut :",["Rester sans signaler","Allumer les feux de détresse et signaler le véhicule","Laisser les portes ouvertes"],1,"Il faut prévenir les autres usagers (feux de détresse, triangle)."],
+[3,"En cas d'accident, les trois réflexes sont :",["Fuir, filmer, discuter","Protéger, alerter, secourir","Klaxonner, attendre, partir"],1,"Protéger les lieux, alerter les secours, porter secours."],
+[3,"Un blessé grave après un accident :",["On le déplace tout de suite","On ne le déplace pas sauf danger immédiat","On le fait boire"],1,"Le déplacer peut aggraver ses blessures."],
+[3,"Conduire sans permis valide est :",["Toléré en ville","Une infraction","Permis la journée"],1,"Il faut le permis de la catégorie du véhicule."]
+];
+const CATS=["Panneaux","Priorités","Règles de conduite","Sécurité & secours"];
+const $=s=>document.querySelector(s), app=$("#app");
+const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let isPro=ls.get("pro",false), best=ls.get("best",{});
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+let run=null;
+
+function pool(cat){
+  let all=Q.map((q,i)=>({i,cat:q[0],q:q[1],o:q[2],a:q[3],e:q[4]}));
+  if(!isPro) all=all.filter(x=>x.i%3===0);
+  return cat==null?all:all.filter(x=>x.cat===cat);
+}
+function home(){
+  const total=Q.length;
+  app.innerHTML=`<div class="card"><div class="muted">Prépare ton examen du Code de la route</div>
+  <div class="muted">${isPro?"Version Pro ✅ — "+total+" questions":"Version gratuite — "+Math.ceil(total/3)+" questions sur "+total}</div></div>
+  <button id="ex">📝 Examen blanc (${Math.min(20,pool().length)} questions)</button>
+  ${CATS.map((c,i)=>`<button class="sec" data-c="${i}">${c}${best["c"+i]!=null?" — meilleur : "+best["c"+i]+"%":""}</button>`).join("")}
+  ${isPro?"":`<button id="pro" style="background:var(--y);color:#222">🔓 Débloquer Pro <span class="pro">${PRO_PRICE}</span></button>`}
+  <div class="muted">Meilleur examen : ${best.ex!=null?best.ex+"%":"—"}</div>`;
+  $("#ex").onclick=()=>start(null,20);
+  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>start(+b.dataset.c,99));
+  if($("#pro"))$("#pro").onclick=proScreen;
+}
+function start(cat,n){
+  const p=shuffle(pool(cat)).slice(0,n);
+  if(!p.length){alert("Aucune question gratuite dans cette catégorie. Passe en Pro !");return proScreen()}
+  run={cat,qs:p,k:0,score:0};show();
+}
+function show(){
+  const x=run.qs[run.k];
+  const order=shuffle(x.o.map((t,i)=>({t,i})));
+  app.innerHTML=`<div class="bar"><i style="width:${run.k/run.qs.length*100}%"></i></div>
+  <div class="muted">Question ${run.k+1} / ${run.qs.length}</div>
+  <div class="card"><div class="q">${x.q}</div>${order.map(o=>`<button class="opt" data-i="${o.i}">${o.t}</button>`).join("")}<div id="fb"></div></div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(b,x));
+}
+function answer(b,x){
+  const ok=+b.dataset.i===x.a; if(ok)run.score++;
+  document.querySelectorAll(".opt").forEach(o=>{o.disabled=true;if(+o.dataset.i===x.a)o.classList.add("ok")});
+  if(!ok)b.classList.add("ko");
+  $("#fb").innerHTML=`<div class="exp">${ok?"✅ Bonne réponse. ":"❌ Mauvaise réponse. "}${x.e}</div><button id="nx">${run.k+1<run.qs.length?"Suivant →":"Voir mon résultat"}</button>`;
+  $("#nx").onclick=()=>{run.k++;run.k<run.qs.length?show():result()};
+}
+function result(){
+  const pct=Math.round(run.score/run.qs.length*100), win=pct>=PASS*100;
+  const key=run.cat==null?"ex":"c"+run.cat; if(best[key]==null||pct>best[key]){best[key]=pct;ls.set("best",best)}
+  app.innerHTML=`<div class="card"><div class="big">${run.score}/${run.qs.length}</div>
+  <div class="muted" style="font-size:18px">${pct}% — ${win?"🎉 Réussi !":"💪 Continue, tu y es presque"}</div></div>
+  <button id="again">Recommencer</button><button class="sec" id="h">Menu</button>
+  ${isPro?"":`<button id="pro" style="background:var(--y);color:#222">🔓 Plus de questions avec Pro</button>`}`;
+  $("#again").onclick=()=>start(run.cat,run.cat==null?20:99);$("#h").onclick=home;
+  if($("#pro"))$("#pro").onclick=proScreen;
+}
+function proScreen(){
+  const msg=encodeURIComponent("Bonjour, je veux le code Pro de l'app Code Route Bénin ("+PRO_PRICE+").");
+  app.innerHTML=`<div class="card"><div class="q">Version Pro — ${PRO_PRICE}</div>
+  <p>✔ Toutes les ${Q.length} questions<br>✔ Mises à jour futures<br>✔ Paiement par Mobile Money</p></div>
+  <a href="https://wa.me/${WHATSAPP}?text=${msg}" target="_blank"><button>💬 Acheter le code sur WhatsApp</button></a>
+  <input id="code" placeholder="Entre ton code Pro" autocapitalize="characters">
+  <button id="val">Valider le code</button><button class="sec" id="h">Retour</button>`;
+  $("#h").onclick=home;
+  $("#val").onclick=()=>{const c=$("#code").value.trim().toUpperCase();
+    if(PRO_CODES.includes(c)){isPro=true;ls.set("pro",true);alert("Pro activé ✅");home()}else alert("Code invalide")};
+}
+home();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
