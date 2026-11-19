@@ -307,7 +307,7 @@ function pay(){
   if(!navigator.onLine){alert("Connecte-toi à internet pour payer.");return}
   loadK(()=>{
     if(!kReady){ if(typeof addSuccessListener==="function")addSuccessListener(onPaid); kReady=true }
-    openKkiapayWidget({amount:PRO_AMOUNT,key:KKIAPAY_KEY,sandbox:SANDBOX,position:"center",theme:"#0b7a3b",paymentmethod:"momo"});
+    openKkiapayWidget({amount:PRO_AMOUNT,key:KKIAPAY_KEY,sandbox:SANDBOX,position:"center",theme:"#0b7a3b"});
   },()=>alert("Impossible de charger le paiement. Vérifie ta connexion et réessaie."));
 }
 function proScreen(){
